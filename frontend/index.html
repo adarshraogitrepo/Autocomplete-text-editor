@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Autocomplete Editor</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div id="app">
+        <!-- Left: Text Editor -->
+        <div id="editor-container">
+
+            <!-- Insert + Delete UI (side by side) -->
+            <div id="word-controls" style="display: flex; gap: 12px; margin-bottom: 10px;">
+                
+                <!-- Insert -->
+                <div>
+                    <input
+                        id="newWordInput"
+                        type="text"
+                        placeholder="Insert new word"
+                    />
+                    <button onclick="handleInsert()">Insert</button>
+                </div>
+
+                <!-- Delete -->
+                <div>
+                    <input
+                        id="deleteWordInput"
+                        type="text"
+                        placeholder="Delete word"
+                    />
+                    <button onclick="handleDelete()">Delete</button>
+                </div>
+
+            </div>
+
+            <!-- Text editor -->
+            <textarea
+                id="editor"
+                placeholder="Start typing here..."
+                spellcheck="false"
+            ></textarea>
+        </div>
+
+        <!-- Right: Controls + Suggestions -->
+        <div id="side-panel">
+            <div id="k-control">
+                <label for="k-slider">Top‑K: <span id="k-value">5</span></label>
+                <input
+                    type="range"
+                    id="k-slider"
+                    min="1"
+                    max="10"
+                    value="5"
+                />
+            </div>
+
+            <div id="suggestions-container">
+                <h3>Suggestions</h3>
+                <ul id="suggestions"></ul>
+            </div>
+
+            <!-- Trie visualiser placeholder -->
+           <div id="trie-visualiser">
+    <h3>Trie Visualiser</h3>
+    <svg id="trie-svg" width="100%" height="400"></svg>
+</div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

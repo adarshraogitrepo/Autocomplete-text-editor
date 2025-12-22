@@ -56,16 +56,24 @@ editor.addEventListener("keydown", (e) => {
 /* ---------------- Core Logic ---------------- */
 
 function triggerAutocomplete() {
-    const text = editor.value;
-    const prefix = getCurrentPrefix(text);
+  const text = editor.value;
+  const match = text.match(/([a-zA-Z]+)$/);
 
-    if (prefix.length === 0) {
-        clearSuggestions();
-        return;
-    }
+  if (!match) {
+    suggestions.innerHTML = ""; // 🔥 REQUIRED
+    return;
+  }
 
-    fetchSuggestions(prefix, k);
+  const prefix = match[1];
+
+  fetch(`http://localhost:8080/query?prefix=${prefix}&k=${k}`)
+    .then(res => res.text())
+    .then(data => {
+      const words = data.split("\n").filter(Boolean);
+      renderSuggestions(words);
+    });
 }
+
 
 function fetchSuggestions(prefix, k) {
     fetch(`http://localhost:8080/query?prefix=${prefix}&k=${k}`)
@@ -146,16 +154,21 @@ function handleInsert() {
     updateTrieSVG(prefix, k);
 }
 function handleDelete() {
-    const input = document.getElementById("deleteWordInput");
-    const word = input.value.trim();
-    if (!word) return;
+  const input = document.getElementById("deleteWordInput");
+  const word = input.value.trim();
+  if (!word) return;
 
-    deleteWord(word);
-    input.value = "";
+  fetch(`http://localhost:8080/delete?word=${word}`)
+    .then(() => {
+      console.log("Deleted:", word);
+      triggerAutocomplete();
+    })
+    .catch(err => console.error(err));
 
-    const prefix = getCurrentPrefix();
-    updateTrieSVG(prefix, k);
+  input.value = "";
 }
+
+
 
 function fetchTrie() {
     fetch("http://localhost:8080/trie")

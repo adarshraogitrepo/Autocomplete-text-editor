@@ -122,6 +122,10 @@ void handle_client(SOCKET client, TrieNode *root) {
         handle_delete(root, buffer);
         send_response(client, "OK");
     }
+    else if (strncmp(buffer, "GET /select", 11) == 0) {
+        handle_select(root, buffer);
+        send_response(client, "OK");
+    }
     else if (strncmp(buffer, "GET /trie", 9) == 0) {
         handle_trie(client, root);
     }
@@ -135,6 +139,7 @@ void handle_client(SOCKET client, TrieNode *root) {
 
     closesocket(client);
 }
+
 
 
 void handle_query(SOCKET client, TrieNode *root, const char *request) {

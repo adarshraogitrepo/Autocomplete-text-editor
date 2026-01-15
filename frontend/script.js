@@ -351,18 +351,11 @@ function checkCapitalization() {
 
 function checkEndingPunctuation() {
   const text = editor.innerText;
-
-  // split into lines
   const lines = text.split("\n");
   const lastLine = lines[lines.length - 1];
-
-  // ignore short lines
   if (lastLine.trim().split(/\s+/).length < 2) return;
-
-  // ignore if punctuation already present
   if (/[.!?]$/.test(lastLine.trim())) return;
 
-  // underline ONLY the last character
   editor.innerHTML = editor.innerHTML.replace(
     /([^\n])$/,
     `<span class="grammar-issue">$1</span>`
@@ -386,7 +379,7 @@ function checkRepeatedWords() {
 
 
 fetchStats();
-setInterval(fetchStats, 1000);
+setInterval(fetchStats, 5000);
 
 
 function runGrammarCheck() {

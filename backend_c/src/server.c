@@ -20,13 +20,47 @@ typedef struct {
 
 Stats stats = {0, 0, 0, 0};
 
+#define CACHE_SIZE 20
+
+typedef struct {
+    char prefix[128];
+    int k;
+    char response[BUFFER_SIZE];
+    int valid;
+} CacheEntry;
+
+CacheEntry prefixCache[CACHE_SIZE];
+int cachePtr = 0;
+
 
 int start_server(int port);
 void handle_client(SOCKET client, TrieNode *root);
 void handle_query(SOCKET client, TrieNode *root, const char *request);
 void handle_select(TrieNode *root, const char *request);
 void send_response(SOCKET client, const char *body);
+char* cache_get(const char *prefix, int k) {
+    for (int i = 0; i < CACHE_SIZE; i++) {
+        if (prefixCache[i].valid &&
+            prefixCache[i].k == k &&
+            strcmp(prefixCache[i].prefix, prefix) == 0) {
+            return prefixCache[i].response;
+        }
+    }
+    return NULL;
+}
 
+void cache_put(const char *prefix, int k, const char *response) {
+    strcpy(prefixCache[cachePtr].prefix, prefix);
+    prefixCache[cachePtr].k = k;
+    strcpy(prefixCache[cachePtr].response, response);
+    prefixCache[cachePtr].valid = 1;
+
+    cachePtr = (cachePtr + 1) % CACHE_SIZE;
+}
+
+void cache_clear() {
+    memset(prefixCache, 0, sizeof(prefixCache));
+}
 int main() {
     WSADATA wsa;
     WSAStartup(MAKEWORD(2,2), &wsa);
@@ -85,6 +119,8 @@ void handle_insert(TrieNode *root, const char *request) {
     if (word[0] == '\0') return;
 
     trie_insert_word(root, word);
+    cache_clear();
+
 }
 
 void handle_delete(TrieNode *root, const char *request) {
@@ -96,6 +132,8 @@ void handle_delete(TrieNode *root, const char *request) {
     if (word[0] == '\0') return;
 
     trie_delete_word(root, word);
+    cache_clear();
+
 }
 
 void handle_trie(SOCKET client, TrieNode *root) {
@@ -167,6 +205,13 @@ void handle_query(SOCKET client, TrieNode *root, const char *request) {
         send_response(client, "Invalid parameters");
         return;
     }
+    char *cached = cache_get(prefix, k);
+    if (cached != NULL) {
+        printf("[CACHE HIT] prefix=%s k=%d\n", prefix, k);
+        send_response(client, cached);
+        return;
+    }
+    printf("[CACHE MISS] prefix=%s k=%d\n", prefix, k);
 
     MinHeap *heap = autocomplete_top_k(root, prefix, k);
 
@@ -180,9 +225,10 @@ void handle_query(SOCKET client, TrieNode *root, const char *request) {
         }
         heap_free(heap);
     }
-
+    cache_put(prefix, k, response);
     send_response(client, response);
 }
+
 void handle_select(TrieNode *root, const char *request) {
     stats.selections++;
 

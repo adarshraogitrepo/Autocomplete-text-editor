@@ -1,5 +1,6 @@
 let DICTIONARY = [];
 
+let grammarActive = false;
 
 fetch("commondic.txt")
   .then(res => res.text())
@@ -42,6 +43,29 @@ kSlider.addEventListener("input", () => {
 // Autocomplete on typing
 editor.addEventListener("input", () => {
   triggerAutocomplete();
+});
+
+editor.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+
+    const range = sel.getRangeAt(0);
+
+    // get full text BEFORE cursor
+    const before = editor.innerText.slice(
+      0,
+      editor.innerText.length
+    );
+
+    const lines = before.split("\n");
+    const lastLine = lines[lines.length - 1];
+    const indent = lastLine.match(/^\s*/)[0];
+
+    document.execCommand("insertText", false, "\n" + indent);
+  }
 });
 
 
@@ -143,22 +167,26 @@ function renderSuggestions(words) {
 }
 
 function insertSuggestion(word) {
-  grammarEnabled = false;
-
   const text = editor.innerText;
   const match = text.match(/([a-zA-Z]+)$/);
   const prefix = match ? match[1] : "";
 
   editor.innerText = text.replace(/([a-zA-Z]+)$/, word + " ");
 
+  // move cursor to end
+  const range = document.createRange();
+  range.selectNodeContents(editor);
+  range.collapse(false);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+
   fetch(`http://localhost:8080/select?prefix=${prefix}&word=${word}`)
     .catch(() => {});
 
   clearSuggestions();
-  editor.focus();
-
-  grammarEnabled = true;
 }
+
 
 
 /* ---------------- Helpers ---------------- */
@@ -309,14 +337,12 @@ toggleBtn.addEventListener("click", () => {
 });
 
 function checkCapitalization() {
-  // Sentence start lowercase
   editor.innerHTML = editor.innerHTML.replace(
     /(^|[.!?]\s+)([a-z])/g,
     (_, p1, p2) =>
       `${p1}<span class="grammar-issue" title="Sentence should start with a capital">${p2}</span>`
   );
 
-  // lowercase "i"
   editor.innerHTML = editor.innerHTML.replace(
     /\bi\b/g,
     `<span class="grammar-issue" title="Should be capital I">i</span>`
@@ -324,12 +350,23 @@ function checkCapitalization() {
 }
 
 function checkEndingPunctuation() {
-  const html = editor.innerHTML.trim();
-  if (/[a-zA-Z]$/.test(html)) {
-    editor.innerHTML =
-      html +
-      `<span class="grammar-issue" title="Sentence missing punctuation">⟂</span>`;
-  }
+  const text = editor.innerText;
+
+  // split into lines
+  const lines = text.split("\n");
+  const lastLine = lines[lines.length - 1];
+
+  // ignore short lines
+  if (lastLine.trim().split(/\s+/).length < 2) return;
+
+  // ignore if punctuation already present
+  if (/[.!?]$/.test(lastLine.trim())) return;
+
+  // underline ONLY the last character
+  editor.innerHTML = editor.innerHTML.replace(
+    /([^\n])$/,
+    `<span class="grammar-issue">$1</span>`
+  );
 }
 
 
@@ -353,6 +390,14 @@ setInterval(fetchStats, 1000);
 
 
 function runGrammarCheck() {
+
+  if (grammarActive) {
+    editor.innerText = editor.innerText; 
+    grammarActive = false;
+    editor.focus();
+    return;
+  }
+
   const text = editor.innerText;
   if (!text.trim()) return;
 
@@ -360,7 +405,11 @@ function runGrammarCheck() {
   checkRepeatedWords();
   checkCapitalization();
   checkEndingPunctuation();
+
+  grammarActive = true;
+  editor.focus();
 }
+
 
 //drawTestTrie();
 

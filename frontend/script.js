@@ -1,5 +1,6 @@
 let DICTIONARY = [];
 
+
 fetch("commondic.txt")
   .then(res => res.text())
   .then(text => {
@@ -16,7 +17,6 @@ const suggestionsList = document.getElementById("suggestions");
 const kSlider = document.getElementById("k-slider");
 const kValue = document.getElementById("k-value");
 
-let grammarTimer = null;
 
 
 let k = parseInt(kSlider.value, 10);
@@ -38,18 +38,13 @@ kSlider.addEventListener("input", () => {
 
 /* ---------------- Editor Input ---------------- */
 
-editor.addEventListener("blur", () => {
-  runGrammarCheck();
-});
+
 // Autocomplete on typing
 editor.addEventListener("input", () => {
   triggerAutocomplete();
 });
 
-// Grammar only when leaving editor
-editor.addEventListener("blur", () => {
-  runGrammarCheck();
-});
+
 
 /* ---------------- Keyboard Navigation ---------------- */
 
@@ -148,6 +143,8 @@ function renderSuggestions(words) {
 }
 
 function insertSuggestion(word) {
+  grammarEnabled = false;
+
   const text = editor.innerText;
   const match = text.match(/([a-zA-Z]+)$/);
   const prefix = match ? match[1] : "";
@@ -158,6 +155,9 @@ function insertSuggestion(word) {
     .catch(() => {});
 
   clearSuggestions();
+  editor.focus();
+
+  grammarEnabled = true;
 }
 
 
@@ -246,6 +246,7 @@ function insertNewWord(word) {
 }
 
 function handleInsert() {
+  grammarEnabled = false;
     const input = document.getElementById("newWordInput");
     const word = input.value.trim();
     if (!word) return;
@@ -257,6 +258,7 @@ function handleInsert() {
     //updateTrieSVG(prefix, k);
 }
 function handleDelete() {
+  grammarEnabled = false;
   const input = document.getElementById("deleteWordInput");
   const word = input.value.trim();
   if (!word) return;
@@ -349,30 +351,15 @@ function checkRepeatedWords() {
 fetchStats();
 setInterval(fetchStats, 1000);
 
-function saveCursor() {
-  const sel = window.getSelection();
-  return sel.rangeCount ? sel.getRangeAt(0) : null;
-}
-
-function restoreCursor(range) {
-  if (!range) return;
-  const sel = window.getSelection();
-  sel.removeAllRanges();
-  sel.addRange(range);
-}
 
 function runGrammarCheck() {
-  const range = saveCursor();   
   const text = editor.innerText;
   if (!text.trim()) return;
 
   editor.innerHTML = escapeHTML(text);
-
   checkRepeatedWords();
   checkCapitalization();
   checkEndingPunctuation();
-
-  restoreCursor(range);        
 }
 
 //drawTestTrie();

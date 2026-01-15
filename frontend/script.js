@@ -16,6 +16,9 @@ const suggestionsList = document.getElementById("suggestions");
 const kSlider = document.getElementById("k-slider");
 const kValue = document.getElementById("k-value");
 
+let grammarTimer = null;
+
+
 let k = parseInt(kSlider.value, 10);
 let activeIndex = -1;
 
@@ -35,11 +38,17 @@ kSlider.addEventListener("input", () => {
 
 /* ---------------- Editor Input ---------------- */
 
+editor.addEventListener("blur", () => {
+  runGrammarCheck();
+});
+// Autocomplete on typing
 editor.addEventListener("input", () => {
-    triggerAutocomplete();
+  triggerAutocomplete();
+});
 
-    const prefix = getCurrentPrefix();
-
+// Grammar only when leaving editor
+editor.addEventListener("blur", () => {
+  runGrammarCheck();
 });
 
 /* ---------------- Keyboard Navigation ---------------- */
@@ -297,20 +306,73 @@ toggleBtn.addEventListener("click", () => {
   toggleBtn.textContent = hidden ? "Hide dashboard" : "Show dashboard";
 });
 
-// --- Dashboard startup ---
+function checkCapitalization() {
+  // Sentence start lowercase
+  editor.innerHTML = editor.innerHTML.replace(
+    /(^|[.!?]\s+)([a-z])/g,
+    (_, p1, p2) =>
+      `${p1}<span class="grammar-issue" title="Sentence should start with a capital">${p2}</span>`
+  );
+
+  // lowercase "i"
+  editor.innerHTML = editor.innerHTML.replace(
+    /\bi\b/g,
+    `<span class="grammar-issue" title="Should be capital I">i</span>`
+  );
+}
+
+function checkEndingPunctuation() {
+  const html = editor.innerHTML.trim();
+  if (/[a-zA-Z]$/.test(html)) {
+    editor.innerHTML =
+      html +
+      `<span class="grammar-issue" title="Sentence missing punctuation">⟂</span>`;
+  }
+}
+
+
+function escapeHTML(str) {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function checkRepeatedWords() {
+  editor.innerHTML = editor.innerHTML.replace(
+    /\b(\w+)\s+\1\b/gi,
+    `$1 <span class="grammar-issue" title="Repeated word">$1</span>`
+  );
+}
+
+
 fetchStats();
 setInterval(fetchStats, 1000);
 
+function saveCursor() {
+  const sel = window.getSelection();
+  return sel.rangeCount ? sel.getRangeAt(0) : null;
+}
+
+function restoreCursor(range) {
+  if (!range) return;
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
 function runGrammarCheck() {
+  const range = saveCursor();   
   const text = editor.innerText;
   if (!text.trim()) return;
 
-  // Remove previous grammar markup
-  editor.innerHTML = text;
+  editor.innerHTML = escapeHTML(text);
 
   checkRepeatedWords();
   checkCapitalization();
   checkEndingPunctuation();
+
+  restoreCursor(range);        
 }
 
 //drawTestTrie();

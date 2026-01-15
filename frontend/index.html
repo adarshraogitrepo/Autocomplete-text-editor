@@ -36,11 +36,13 @@
             </div>
 
             <!-- Text editor -->
-            <textarea
-                id="editor"
-                placeholder="Start typing here..."
-                spellcheck="false"
-            ></textarea>
+           <div
+  id="editor"
+  contenteditable="true"
+  spellcheck="false"
+  class="editor"
+  data-placeholder="Start typing here..."
+></div>
         </div>
 
         <!-- Right: Controls + Suggestions -->
@@ -55,7 +57,17 @@
                     value="5"
                 />
             </div>
+            <div id="dashboard">
+  <h3>📊 Dashboard</h3>
+  <div class="stat">Queries: <span id="stat-queries">0</span></div>
+  <div class="stat">Selections: <span id="stat-selections">0</span></div>
+  <div class="stat">Inserts: <span id="stat-inserts">0</span></div>
+  <div class="stat">Deletes: <span id="stat-deletes">0</span></div>
+</div>
 
+<button id="toggle-dashboard">Hide dashboard</button>
+
+            
             <div id="suggestions-container">
                 <h3>Suggestions</h3>
                 <ul id="suggestions"></ul>

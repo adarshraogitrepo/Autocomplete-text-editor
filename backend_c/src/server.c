@@ -11,6 +11,16 @@
 #define PORT 8080
 #define BUFFER_SIZE 4096
 
+typedef struct {
+    int queries;
+    int selections;
+    int inserts;
+    int deletes;
+} Stats;
+
+Stats stats = {0, 0, 0, 0};
+
+
 int start_server(int port);
 void handle_client(SOCKET client, TrieNode *root);
 void handle_query(SOCKET client, TrieNode *root, const char *request);
@@ -67,6 +77,7 @@ printf("Bind successful\n");
 }
 
 void handle_insert(TrieNode *root, const char *request) {
+    stats.inserts++;
     char word[128] = {0};
 
     sscanf(request, "GET /insert?word=%127[^ ]", word);
@@ -77,6 +88,7 @@ void handle_insert(TrieNode *root, const char *request) {
 }
 
 void handle_delete(TrieNode *root, const char *request) {
+    stats.deletes++;
     char word[128] = {0};
 
     sscanf(request, "GET /delete?word=%127[^ ]", word);
@@ -126,6 +138,9 @@ void handle_client(SOCKET client, TrieNode *root) {
         handle_select(root, buffer);
         send_response(client, "OK");
     }
+    else if (strncmp(buffer, "GET /stats", 10) == 0) {
+    handle_stats(client);
+    }
     else if (strncmp(buffer, "GET /trie", 9) == 0) {
         handle_trie(client, root);
     }
@@ -143,9 +158,9 @@ void handle_client(SOCKET client, TrieNode *root) {
 
 
 void handle_query(SOCKET client, TrieNode *root, const char *request) {
+    stats.queries++;
     char prefix[128] = {0};
     int k = 0;
-
     sscanf(request, "GET /query?prefix=%127[^&]&k=%d", prefix, &k);
 
     if (prefix[0] == '\0' || k <= 0) {
@@ -169,6 +184,8 @@ void handle_query(SOCKET client, TrieNode *root, const char *request) {
     send_response(client, response);
 }
 void handle_select(TrieNode *root, const char *request) {
+    stats.selections++;
+
     char word[128] = {0};
 
     sscanf(request, "GET /select?%*[^&]&word=%127[^ ]", word);
@@ -204,4 +221,19 @@ void get_request_line(char *buffer, char *line) {
         i++;
     }
     line[i] = '\0';
+}
+void handle_stats(SOCKET client) {
+    char response[256];
+
+    snprintf(
+        response,
+        sizeof(response),
+        "queries=%d\nselections=%d\ninserts=%d\ndeletes=%d\n",
+        stats.queries,
+        stats.selections,
+        stats.inserts,
+        stats.deletes
+    );
+
+    send_response(client, response);
 }

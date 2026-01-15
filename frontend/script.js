@@ -69,7 +69,8 @@ editor.addEventListener("keydown", (e) => {
 /* ---------------- Core Logic ---------------- */
 
 function triggerAutocomplete() {
-  const text = editor.value;
+  const text = editor.innerText;
+
   const match = text.match(/([a-zA-Z]+)$/);
 
   clearSuggestions();
@@ -138,23 +139,20 @@ function renderSuggestions(words) {
 }
 
 function insertSuggestion(word) {
-    const text = editor.value;
-    const match = text.match(/([a-zA-Z]+)$/);
-    const prefix = match ? match[1] : "";
+  const text = editor.innerText;
+  const match = text.match(/([a-zA-Z]+)$/);
+  const prefix = match ? match[1] : "";
 
-    fetch(`http://localhost:8080/select?prefix=${prefix}&word=${word}`)
-        .catch(() => {});
+  editor.innerText = text.replace(/([a-zA-Z]+)$/, word + " ");
 
-    editor.value = text.replace(/([a-zA-Z]+)$/, word + " ");
-    clearSuggestions();
+  fetch(`http://localhost:8080/select?prefix=${prefix}&word=${word}`)
+    .catch(() => {});
+
+  clearSuggestions();
 }
+
 
 /* ---------------- Helpers ---------------- */
-
-function getCurrentPrefix(text) {
-    const match = text.match(/([a-zA-Z]+)$/);
-    return match ? match[1] : "";
-}
 
 function clearSuggestions() {
     suggestionsList.innerHTML = "";
@@ -226,7 +224,8 @@ function renderSpellSuggestions(words) {
 }
 
 function replaceCurrentWord(word) {
-  editor.value = editor.value.replace(/([a-zA-Z]+)$/, word + " ");
+ editor.innerText = editor.innerText.replace(/([a-zA-Z]+)$/, word + " ");
+
   clearSpellSuggestions();
 }
 
@@ -265,13 +264,54 @@ function handleDelete() {
 
 
 function getCurrentPrefix() {
-    const editor = document.getElementById("editor");
-    const text = editor.value;
-    const match = text.match(/([a-zA-Z]+)$/);
-    return match ? match[1].toLowerCase() : "";
+     const text = editor.innerText;
+  const match = text.match(/([a-zA-Z]+)$/);
+  return match ? match[1].toLowerCase() : "";
 }
 
 
+function fetchStats() {
+  console.log("fetchStats called");
+  fetch("http://localhost:8080/stats")
+    .then(res => res.text())
+    .then(text => {
+      const lines = text.split("\n");
+
+      lines.forEach(line => {
+        const [key, value] = line.split("=");
+        if (!key || !value) return;
+
+        const el = document.getElementById("stat-" + key);
+        if (el) el.textContent = value;
+      });
+    })
+    .catch(err => console.error("Stats error:", err));
+}
+
+const toggleBtn = document.getElementById("toggle-dashboard");
+const dashboard = document.getElementById("dashboard");
+
+toggleBtn.addEventListener("click", () => {
+  const hidden = dashboard.style.display === "none";
+  dashboard.style.display = hidden ? "block" : "none";
+  toggleBtn.textContent = hidden ? "Hide dashboard" : "Show dashboard";
+});
+
+// --- Dashboard startup ---
+fetchStats();
+setInterval(fetchStats, 1000);
+
+function runGrammarCheck() {
+  const text = editor.innerText;
+  if (!text.trim()) return;
+
+  // Remove previous grammar markup
+  editor.innerHTML = text;
+
+  checkRepeatedWords();
+  checkCapitalization();
+  checkEndingPunctuation();
+}
 
 //drawTestTrie();
 

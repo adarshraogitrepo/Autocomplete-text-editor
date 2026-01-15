@@ -50,6 +50,24 @@ body {
   color: #93c5fd;
 }
 
+#dashboard {
+  margin-top: 16px;
+  padding: 10px;
+  background: #0f172a;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.stat {
+  margin: 4px 0;
+}
+
+#toggle-dashboard {
+  margin-top: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
 
 /* K Slider */
 #k-control label {
@@ -82,6 +100,30 @@ body {
 #suggestions li:hover {
     background: #1e293b;
 }
+
+.editor {
+  min-height: 100%;
+  padding: 12px;
+  outline: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: monospace;
+}
+
+/* Placeholder for contenteditable */
+.editor:empty::before {
+  content: attr(data-placeholder);
+  color: #64748b;
+}
+
+/* Grammar underline */
+.grammar-issue {
+  text-decoration: underline;
+  text-decoration-color: #f59e0b;
+  text-decoration-thickness: 2px;
+  cursor: help;
+}
+
 
 /* Trie Visualiser */
 

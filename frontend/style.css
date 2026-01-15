@@ -44,6 +44,13 @@ body {
     background: #020617;
 }
 
+#spellcheck-container li {
+  font-size: 18px;
+  font-weight: bold;
+  color: #93c5fd;
+}
+
+
 /* K Slider */
 #k-control label {
     display: block;
@@ -77,9 +84,4 @@ body {
 }
 
 /* Trie Visualiser */
-#trie-visualiser {
-    border-top: 1px solid #334155;
-    padding-top: 12px;
-    font-size: 14px;
-    opacity: 0.7;
-}
+

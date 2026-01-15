@@ -1,3 +1,16 @@
+let DICTIONARY = [];
+
+fetch("commondic.txt")
+  .then(res => res.text())
+  .then(text => {
+    DICTIONARY = text
+      .split("\n")
+      .map(w => w.trim().toLowerCase())
+      .filter(Boolean);
+
+    console.log("Spell dictionary loaded:", DICTIONARY.length);
+  });
+
 const editor = document.getElementById("editor");
 const suggestionsList = document.getElementById("suggestions");
 const kSlider = document.getElementById("k-slider");
@@ -8,6 +21,7 @@ let activeIndex = -1;
 
 kValue.textContent = k;
 
+
 /* ---------------- Slider ---------------- */
 
 kSlider.addEventListener("input", () => {
@@ -17,7 +31,6 @@ kSlider.addEventListener("input", () => {
     triggerAutocomplete();
 
     const prefix = getCurrentPrefix();
-    updateTrieSVG(prefix, k);
 });
 
 /* ---------------- Editor Input ---------------- */
@@ -26,7 +39,7 @@ editor.addEventListener("input", () => {
     triggerAutocomplete();
 
     const prefix = getCurrentPrefix();
-    updateTrieSVG(prefix, k);
+
 });
 
 /* ---------------- Keyboard Navigation ---------------- */
@@ -59,20 +72,37 @@ function triggerAutocomplete() {
   const text = editor.value;
   const match = text.match(/([a-zA-Z]+)$/);
 
-  if (!match) {
-    suggestions.innerHTML = ""; // 🔥 REQUIRED
-    return;
-  }
+  clearSuggestions();
+  clearSpellSuggestions();
 
-  const prefix = match[1];
+  if (!match) return;
+
+  const prefix = match[1].toLowerCase();
 
   fetch(`http://localhost:8080/query?prefix=${prefix}&k=${k}`)
     .then(res => res.text())
     .then(data => {
       const words = data.split("\n").filter(Boolean);
-      renderSuggestions(words);
+
+     if (words.length > 0) {
+  renderSuggestions(words);
+
+  if (!DICTIONARY.includes(prefix)) {
+    const spell = getSpellSuggestions(prefix);
+    if (spell.length > 0) {
+      renderSpellSuggestions(spell);
+    }
+  }
+}
+else {
+        const spell = getSpellSuggestions(prefix);
+        if (spell.length > 0) {
+          renderSpellSuggestions(spell);
+        }
+      }
     });
 }
+
 
 
 function fetchSuggestions(prefix, k) {
@@ -136,6 +166,71 @@ function updateActive(items) {
     }
 }
 
+function isEditDistanceOne(a, b) {
+  const la = a.length, lb = b.length;
+  if (Math.abs(la - lb) > 1) return false;
+
+  let i = 0, j = 0, diff = 0;
+
+  while (i < la && j < lb) {
+    if (a[i] === b[j]) {
+      i++; j++;
+    } else {
+      diff++;
+      if (diff > 1) return false;
+
+      if (la > lb) i++;
+      else if (lb > la) j++;
+      else { i++; j++; }
+    }
+  }
+  return true;
+}
+
+function getSpellSuggestions(word, limit = 3) {
+  const results = [];
+for (const w of DICTIONARY) {
+  if (w[0] !== word[0]) continue;
+
+  if (w.length < 3) continue;
+
+  if (Math.abs(w.length - word.length) > 1) continue;
+
+  if (isEditDistanceOne(word, w)) {
+    results.push(w);
+    if (results.length === limit) break;
+  }
+}
+
+  return results;
+}
+
+const spellContainer = document.getElementById("spellcheck-container");
+const spellList = document.getElementById("spell-suggestions");
+
+function clearSpellSuggestions() {
+  spellList.innerHTML = "";
+  spellContainer.style.display = "none";
+}
+
+function renderSpellSuggestions(words) {
+  clearSpellSuggestions();
+  spellContainer.style.display = "block";
+
+  words.forEach(word => {
+    const li = document.createElement("li");
+    li.textContent = word;
+    li.onclick = () => replaceCurrentWord(word);
+    spellList.appendChild(li);
+  });
+}
+
+function replaceCurrentWord(word) {
+  editor.value = editor.value.replace(/([a-zA-Z]+)$/, word + " ");
+  clearSpellSuggestions();
+}
+
+
 function insertNewWord(word) {
     fetch(`http://localhost:8080/insert?word=${word}`)
         .then(() => console.log("Inserted:", word))
@@ -151,7 +246,7 @@ function handleInsert() {
     input.value = "";
 
     const prefix = getCurrentPrefix();
-    updateTrieSVG(prefix, k);
+    //updateTrieSVG(prefix, k);
 }
 function handleDelete() {
   const input = document.getElementById("deleteWordInput");
@@ -169,180 +264,6 @@ function handleDelete() {
 }
 
 
-
-function fetchTrie() {
-    fetch("http://localhost:8080/trie")
-        .then(res => res.json())
-        .then(data => renderTrie(data.root))
-        .catch(() => {});
-}
-
-function fetchTrieJSON() {
-    return fetch("http://localhost:8080/trie")
-        .then(res => res.json())
-        .then(data => data.root);
-}
-function traverseToPrefix(root, prefix) {
-    let node = root;
-    const path = [];
-
-    for (const ch of prefix) {
-        if (!node.children || !node.children[ch]) break;
-        node = node.children[ch];
-        path.push({ char: ch, node });
-    }
-
-    return { node, path };
-}
-function svgEl(tag, attrs = {}) {
-    const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
-    for (const k in attrs) el.setAttribute(k, attrs[k]);
-    return el;
-}
-
-function drawNode(svg, x, y, label, isEnd = false) {
-    svg.appendChild(svgEl("circle", {
-        cx: x,
-        cy: y,
-        r: 18,
-        fill: isEnd ? "#c8e6c9" : "#e3f2fd",
-        stroke: "#1565c0",
-        "stroke-width": 2
-    }));
-
-    svg.appendChild(svgEl("text", {
-        x,
-        y: y + 5,
-        "text-anchor": "middle",
-        "font-size": "12"
-    })).textContent = label;
-}
-
-function drawEdge(svg, x1, y1, x2, y2) {
-    svg.appendChild(svgEl("line", {
-        x1, y1, x2, y2,
-        stroke: "#555",
-        "stroke-width": 2
-    }));
-}
-
-function renderTrie(node, prefix = "", depth = 0) {
-    const container = document.getElementById("trie-visualiser");
-    container.innerHTML = "<h3>Trie Visualiser</h3>";
-
-    function dfs(n, word) {
-        if (n.end) {
-            const p = document.createElement("p");
-            p.textContent = word + " (freq: " + n.freq + ")";
-            container.appendChild(p);
-        }
-
-        for (const ch in n.children) {
-            dfs(n.children[ch], word + ch);
-        }
-    }
-
-    dfs(node, "");
-}
-function updateTrieSVG(prefix, k) {
-    fetchTrieJSON().then(root => {
-        const svg = document.getElementById("trie-svg");
-        svg.innerHTML = "";
-
-        const { node, path } = traverseToPrefix(root, prefix);
-
-        const startX = 200;
-        let y = 40;
-        let prevX = startX;
-        let prevY = y;
-
-        // Draw root
-        drawNode(svg, startX, y, "•");
-
-        // Draw prefix path vertically
-        path.forEach(p => {
-            y += 80;
-            drawEdge(svg, prevX, prevY, startX, y);
-            drawNode(svg, startX, y, p.char, p.node.end);
-            prevY = y;
-        });
-
-        // Draw top-K children horizontally
-        if (node && node.children) {
-            const children = Object.entries(node.children)
-                .sort((a, b) => (b[1].freq || 0) - (a[1].freq || 0))
-                .slice(0, k);
-
-            const spacing = 70;
-            const baseX = startX - ((children.length - 1) * spacing) / 2;
-            const childY = y + 80;
-
-            children.forEach(([ch, child], i) => {
-                const x = baseX + i * spacing;
-                drawEdge(svg, startX, y, x, childY);
-                drawNode(svg, x, childY, ch, child.end);
-            });
-        }
-    });
-}
-function drawTestTrie() {
-    const svg = document.getElementById("trie-svg");
-    svg.innerHTML = "";
-
-    // Helper to create SVG elements
-    function create(tag, attrs) {
-        const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
-        for (const k in attrs) el.setAttribute(k, attrs[k]);
-        return el;
-    }
-
-    // Example nodes
-    const nodes = [
-        { x: 200, y: 40, label: "root" },
-        { x: 200, y: 120, label: "a" },
-        { x: 150, y: 200, label: "p" },
-        { x: 250, y: 200, label: "p" }
-    ];
-
-    const edges = [
-        [0, 1],
-        [1, 2],
-        [1, 3]
-    ];
-
-    // Draw edges
-    edges.forEach(([u, v]) => {
-        svg.appendChild(create("line", {
-            x1: nodes[u].x,
-            y1: nodes[u].y,
-            x2: nodes[v].x,
-            y2: nodes[v].y,
-            stroke: "#555",
-            "stroke-width": 2
-        }));
-    });
-
-    // Draw nodes
-    nodes.forEach(n => {
-        svg.appendChild(create("circle", {
-            cx: n.x,
-            cy: n.y,
-            r: 18,
-            fill: "#e3f2fd",
-            stroke: "#1565c0",
-            "stroke-width": 2
-        }));
-
-        svg.appendChild(create("text", {
-            x: n.x,
-            y: n.y + 5,
-            "text-anchor": "middle",
-            "font-size": "12",
-            fill: "#000"
-        })).textContent = n.label;
-    });
-}
-
 function getCurrentPrefix() {
     const editor = document.getElementById("editor");
     const text = editor.value;
@@ -350,7 +271,7 @@ function getCurrentPrefix() {
     return match ? match[1].toLowerCase() : "";
 }
 
-updateTrieSVG("", k);
+
 
 //drawTestTrie();
 

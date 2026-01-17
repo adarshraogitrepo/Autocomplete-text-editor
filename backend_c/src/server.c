@@ -115,13 +115,12 @@ void handle_insert(TrieNode *root, const char *request) {
     char word[128] = {0};
 
     sscanf(request, "GET /insert?word=%127[^ ]", word);
-
     if (word[0] == '\0') return;
 
-    trie_insert_word(root, word);
-    cache_clear();
-
+    trie_insert(root, word);   
+    cache_clear();             
 }
+
 
 void handle_delete(TrieNode *root, const char *request) {
     stats.deletes++;
@@ -231,7 +230,6 @@ void handle_query(SOCKET client, TrieNode *root, const char *request) {
 
 void handle_select(TrieNode *root, const char *request) {
     stats.selections++;
-
     char word[128] = {0};
 
     sscanf(request, "GET /select?%*[^&]&word=%127[^ ]", word);
@@ -239,6 +237,8 @@ void handle_select(TrieNode *root, const char *request) {
     if (word[0] == '\0') return;
 
     trie_increment_frequency(root, word);
+
+    cache_clear();
 }
 
 void send_response(SOCKET client, const char *body) {

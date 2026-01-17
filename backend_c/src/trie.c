@@ -40,8 +40,12 @@ void trie_insert(TrieNode *root, const char *word) {
         current = current->children[index];
     }
 
-    current->is_end_of_word = true;
+    if (!current->is_end_of_word) {
+        current->is_end_of_word = true;
+        current->frequency = 100;  
+    }
 }
+
 
 bool trie_search(const TrieNode *root, const char *word) {
     const TrieNode *current = root;

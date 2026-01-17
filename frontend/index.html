@@ -7,13 +7,9 @@
 </head>
 <body>
     <div id="app">
-        <!-- Left: Text Editor -->
         <div id="editor-container">
-
-            <!-- Insert + Delete UI (side by side) -->
             <div id="word-controls" style="display: flex; gap: 12px; margin-bottom: 10px;">
                 
-                <!-- Insert -->
                 <div>
                     <input
                         id="newWordInput"
@@ -22,8 +18,6 @@
                     />
                     <button onclick="handleInsert()">Insert</button>
                 </div>
-
-                <!-- Delete -->
                 <div>
                     <input
                         id="deleteWordInput"
@@ -32,13 +26,11 @@
                     />
                     <button onclick="handleDelete()">Delete</button>
                 </div>
-                  <!-- Grammar -->
-  <div>
-    <button onclick="runGrammarCheck()">Check Grammar</button>
-  </div>
+                <div>
+                     <button onclick="runGrammarCheck()">Check Grammar</button>
+                </div>
             </div>
-
-            <!-- Text editor -->
+       
            <div
   id="editor"
   contenteditable="true"
@@ -48,7 +40,6 @@
 ></div>
         </div>
 
-        <!-- Right: Controls + Suggestions -->
 
         <div id="side-panel">
             <div id="k-control">
@@ -81,8 +72,6 @@
     <h3>Did you mean</h3>
     <ul id="spell-suggestions"></ul>
 </div>
-
-            <!-- Trie visualiser placeholder -->
            
         </div>
     </div>

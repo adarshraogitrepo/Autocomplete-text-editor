@@ -114,7 +114,17 @@ void handle_insert(TrieNode *root, const char *request) {
     stats.inserts++;
     char word[128] = {0};
 
-    sscanf(request, "GET /insert?word=%127[^ ]", word);
+    const char *word_start = strstr(request, "word=");
+    if (word_start) {
+        word_start += 5; // Skip "word="
+        int i = 0;
+        while (i < 127 && word_start[i] && word_start[i] != ' ') {
+            word[i] = word_start[i];
+            i++;
+        }
+        word[i] = '\0';
+    }
+    
     if (word[0] == '\0') return;
 
     trie_insert(root, word);   
@@ -126,7 +136,16 @@ void handle_delete(TrieNode *root, const char *request) {
     stats.deletes++;
     char word[128] = {0};
 
-    sscanf(request, "GET /delete?word=%127[^ ]", word);
+    const char *word_start = strstr(request, "word=");
+    if (word_start) {
+        word_start += 5; // Skip "word="
+        int i = 0;
+        while (i < 127 && word_start[i] && word_start[i] != ' ') {
+            word[i] = word_start[i];
+            i++;
+        }
+        word[i] = '\0';
+    }
 
     if (word[0] == '\0') return;
 
@@ -198,7 +217,24 @@ void handle_query(SOCKET client, TrieNode *root, const char *request) {
     stats.queries++;
     char prefix[128] = {0};
     int k = 0;
-    sscanf(request, "GET /query?prefix=%127[^&]&k=%d", prefix, &k);
+    
+    // Parse prefix parameter
+    const char *prefix_start = strstr(request, "prefix=");
+    if (prefix_start) {
+        prefix_start += 7; // Skip "prefix="
+        int i = 0;
+        while (i < 127 && prefix_start[i] && prefix_start[i] != '&' && prefix_start[i] != ' ') {
+            prefix[i] = prefix_start[i];
+            i++;
+        }
+        prefix[i] = '\0';
+    }
+    
+    // Parse k parameter
+    const char *k_start = strstr(request, "k=");
+    if (k_start) {
+        sscanf(k_start, "k=%d", &k);
+    }
 
     if (prefix[0] == '\0' || k <= 0) {
         send_response(client, "Invalid parameters");
@@ -232,7 +268,16 @@ void handle_select(TrieNode *root, const char *request) {
     stats.selections++;
     char word[128] = {0};
 
-    sscanf(request, "GET /select?%*[^&]&word=%127[^ ]", word);
+    const char *word_start = strstr(request, "word=");
+    if (word_start) {
+        word_start += 5; // Skip "word="
+        int i = 0;
+        while (i < 127 && word_start[i] && word_start[i] != ' ') {
+            word[i] = word_start[i];
+            i++;
+        }
+        word[i] = '\0';
+    }
 
     if (word[0] == '\0') return;
 

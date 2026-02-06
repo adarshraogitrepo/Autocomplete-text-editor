@@ -2,6 +2,39 @@ let DICTIONARY = [];
 
 let grammarActive = false;
 
+/* ====== Dark Mode Toggle ====== */
+const themeToggle = document.getElementById("theme-toggle");
+const htmlElement = document.documentElement;
+
+// Initialize theme from localStorage or system preference
+function initializeTheme() {
+  const savedTheme = localStorage.getItem("theme");
+  let theme = savedTheme || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  
+  htmlElement.setAttribute("data-theme", theme);
+  updateThemeIcon(theme);
+}
+
+function updateThemeIcon(theme) {
+  if (theme === "dark") {
+    themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+  } else {
+    themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+  }
+}
+
+themeToggle.addEventListener("click", () => {
+  const currentTheme = htmlElement.getAttribute("data-theme") || "light";
+  const newTheme = currentTheme === "dark" ? "light" : "dark";
+  
+  htmlElement.setAttribute("data-theme", newTheme);
+  localStorage.setItem("theme", newTheme);
+  updateThemeIcon(newTheme);
+});
+
+// Initialize theme on page load
+initializeTheme();
+
 fetch("commondic.txt")
   .then(res => res.text())
   .then(text => {
@@ -17,13 +50,22 @@ const editor = document.getElementById("editor");
 const suggestionsList = document.getElementById("suggestions");
 const kSlider = document.getElementById("k-slider");
 const kValue = document.getElementById("k-value");
-
-
+const wordCountEl = document.getElementById("word-count");
+const charCountEl = document.getElementById("char-count");
 
 let k = parseInt(kSlider.value, 10);
 let activeIndex = -1;
 
 kValue.textContent = k;
+
+// Update word and character counts
+function updateCounts() {
+  const text = editor.innerText;
+  const words = text.trim().split(/\s+/).filter(w => w.length > 0).length;
+  const chars = text.length;
+  wordCountEl.textContent = text.trim() === "" ? 0 : words;
+  charCountEl.textContent = chars;
+}
 
 
 /* ---------------- Slider ---------------- */
@@ -43,6 +85,7 @@ kSlider.addEventListener("input", () => {
 // Autocomplete on typing
 editor.addEventListener("input", () => {
   triggerAutocomplete();
+  updateCounts();
 });
 
 editor.addEventListener("keydown", (e) => {
@@ -332,8 +375,8 @@ const dashboard = document.getElementById("dashboard");
 
 toggleBtn.addEventListener("click", () => {
   const hidden = dashboard.style.display === "none";
-  dashboard.style.display = hidden ? "block" : "none";
-  toggleBtn.textContent = hidden ? "Hide dashboard" : "Show dashboard";
+  dashboard.style.display = hidden ? "grid" : "none";
+  toggleBtn.innerHTML = hidden ? '<i class="fas fa-chevron-up"></i>' : '<i class="fas fa-chevron-down"></i>';
 });
 
 function checkCapitalization() {

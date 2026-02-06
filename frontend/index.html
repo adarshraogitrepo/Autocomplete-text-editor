@@ -2,77 +2,184 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Autocomplete Editor</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
     <div id="app">
-        <div id="editor-container">
-            <div id="word-controls" style="display: flex; gap: 12px; margin-bottom: 10px;">
-                
-                <div>
-                    <input
-                        id="newWordInput"
-                        type="text"
-                        placeholder="Insert new word"
-                    />
-                    <button onclick="handleInsert()">Insert</button>
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-title">
+                    <i class="fas fa-pen-fancy"></i>
+                    <h1>Smart Autocomplete Editor</h1>
                 </div>
-                <div>
-                    <input
-                        id="deleteWordInput"
-                        type="text"
-                        placeholder="Delete word"
-                    />
-                    <button onclick="handleDelete()">Delete</button>
+                <button id="theme-toggle" class="btn-theme-toggle" title="Toggle dark mode">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <p class="header-subtitle">Write smarter with intelligent suggestions</p>
+            </div>
+        </header>
+
+        <div class="main-container">
+            <!-- Editor Section -->
+            <div id="editor-container" class="editor-container">
+                <div class="editor-header">
+                    <h2>Document</h2>
+                    <div class="editor-stats">
+                        <span class="word-count"><i class="fas fa-file-word"></i> <span id="word-count">0</span> words</span>
+                        <span class="char-count"><i class="fas fa-keyboard"></i> <span id="char-count">0</span> characters</span>
+                    </div>
                 </div>
-                <div>
-                     <button onclick="runGrammarCheck()">Check Grammar</button>
+
+                <!-- Word Management Controls -->
+                <div class="word-controls">
+                    <div class="control-group">
+                        <label>Add to Dictionary</label>
+                        <div class="input-group">
+                            <input
+                                id="newWordInput"
+                                type="text"
+                                placeholder="Enter word..."
+                                class="input-field"
+                            />
+                            <button onclick="handleInsert()" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label>Remove from Dictionary</label>
+                        <div class="input-group">
+                            <input
+                                id="deleteWordInput"
+                                type="text"
+                                placeholder="Enter word to remove..."
+                                class="input-field"
+                            />
+                            <button onclick="handleDelete()" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Remove
+                            </button>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <button onclick="runGrammarCheck()" class="btn btn-secondary">
+                            <i class="fas fa-spell-check"></i> Check Grammar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Main Editor -->
+                <div class="editor-wrapper">
+                    <div
+                        id="editor"
+                        contenteditable="true"
+                        spellcheck="false"
+                        class="editor"
+                        data-placeholder="Start typing here..."
+                    ></div>
+                    <div class="editor-footer">
+                        <span class="editor-hint">💡 Use Arrow keys to navigate suggestions, Enter to select</span>
+                    </div>
                 </div>
             </div>
-       
-           <div
-  id="editor"
-  contenteditable="true"
-  spellcheck="false"
-  class="editor"
-  data-placeholder="Start typing here..."
-></div>
-        </div>
 
+            <!-- Side Panel -->
+            <aside id="side-panel" class="side-panel">
+                <!-- K-Control -->
+                <div class="panel-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-sliders-h"></i> Suggestions Settings
+                    </h3>
+                    <div id="k-control" class="k-control">
+                        <label for="k-slider" class="k-label">
+                            <span>Top-K Results</span>
+                            <span class="k-badge"><span id="k-value">5</span></span>
+                        </label>
+                        <input
+                            type="range"
+                            id="k-slider"
+                            min="1"
+                            max="10"
+                            value="5"
+                            class="slider"
+                        />
+                        <div class="slider-labels">
+                            <span>1</span>
+                            <span>10</span>
+                        </div>
+                    </div>
+                </div>
 
-        <div id="side-panel">
-            <div id="k-control">
-                <label for="k-slider">Top‑K: <span id="k-value">5</span></label>
-                <input
-                    type="range"
-                    id="k-slider"
-                    min="1"
-                    max="10"
-                    value="5"
-                />
-            </div>
-            <div id="dashboard">
-  <h3>📊 Dashboard</h3>
-  <div class="stat">Queries: <span id="stat-queries">0</span></div>
-  <div class="stat">Selections: <span id="stat-selections">0</span></div>
-  <div class="stat">Inserts: <span id="stat-inserts">0</span></div>
-  <div class="stat">Deletes: <span id="stat-deletes">0</span></div>
-</div>
+                <!-- Suggestions Container -->
+                <div class="panel-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-lightbulb"></i> Suggestions
+                    </h3>
+                    <div id="suggestions-container" class="suggestions-container">
+                        <ul id="suggestions" class="suggestions-list"></ul>
+                        <div class="empty-state">
+                            <p><i class="fas fa-pen"></i> Start typing to see suggestions...</p>
+                        </div>
+                    </div>
+                </div>
 
-<button id="toggle-dashboard">Hide dashboard</button>
+                <!-- Spell Check Container -->
+                <div id="spellcheck-container" class="panel-section" style="display: none;">
+                    <h3 class="section-title">
+                        <i class="fas fa-exclamation-circle"></i> Spelling Suggestions
+                    </h3>
+                    <ul id="spell-suggestions" class="spell-suggestions-list"></ul>
+                </div>
 
-            
-            <div id="suggestions-container">
-                <h3>Suggestions</h3>
-                <ul id="suggestions"></ul>
-            </div>
-
-            <div id="spellcheck-container" style="display: none; margin-top: 16px;">
-    <h3>Did you mean</h3>
-    <ul id="spell-suggestions"></ul>
-</div>
-           
+                <!-- Dashboard -->
+                <div class="panel-section">
+                    <div class="dashboard-header">
+                        <h3 class="section-title">
+                            <i class="fas fa-chart-bar"></i> Statistics
+                        </h3>
+                        <button id="toggle-dashboard" class="btn-icon" title="Toggle dashboard">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+                    <div id="dashboard" class="dashboard">
+                        <div class="stat-row">
+                            <div class="stat-item">
+                                <div class="stat-icon">📝</div>
+                                <div class="stat-content">
+                                    <div class="stat-label">Queries</div>
+                                    <div class="stat-value" id="stat-queries">0</div>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-icon">👆</div>
+                                <div class="stat-content">
+                                    <div class="stat-label">Selections</div>
+                                    <div class="stat-value" id="stat-selections">0</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stat-row">
+                            <div class="stat-item">
+                                <div class="stat-icon">➕</div>
+                                <div class="stat-content">
+                                    <div class="stat-label">Inserts</div>
+                                    <div class="stat-value" id="stat-inserts">0</div>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-icon">🗑️</div>
+                                <div class="stat-content">
+                                    <div class="stat-label">Deletes</div>
+                                    <div class="stat-value" id="stat-deletes">0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
         </div>
     </div>
 
